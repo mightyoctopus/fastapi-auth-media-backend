@@ -1,6 +1,6 @@
 from typing import Optional
 from fastapi import FastAPI, HTTPException
-from app.schemas import CreatePost
+from app.schemas import CreatePost, PostResponse
 
 app = FastAPI()
 
@@ -26,14 +26,14 @@ def get_all_posts(limit: int = None):
     return text_posts
 
 
-@app.get("/posts/{id}")
+@app.get("/posts/{id}", response_model=PostResponse)
 def get_post(id: int):
     if id not in text_posts:
         raise HTTPException(status_code=404, detail="Post not found")
     return text_posts.get(id)
 
 
-@app.post("/posts")
+@app.post("/posts", response_model=PostResponse)
 def create_post(post: CreatePost):
     new_id = max(text_posts.keys()) + 1
 
@@ -42,9 +42,9 @@ def create_post(post: CreatePost):
         "content": post.content
     }
 
-    return {
-        "id": new_id,
-        "title": post.title,
-        "content": post.content
-    }
+    return text_posts[new_id]
 
+
+# @app.delete("/post/{id}")
+# def delete_post(id: int):
+#     if id == text_posts[id]:
