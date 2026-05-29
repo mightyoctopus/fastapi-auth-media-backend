@@ -226,3 +226,5 @@ __marimo__/
 # IDE
 .idea/
 
+
+pg.py

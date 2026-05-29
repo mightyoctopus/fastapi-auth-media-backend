@@ -4,4 +4,4 @@ uvicorn[standard]
 python-dotenv
 imagekitio
 aiosqlite
-
+pydantic
