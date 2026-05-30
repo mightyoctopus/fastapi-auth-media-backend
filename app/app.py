@@ -1,50 +1,78 @@
 from typing import Optional
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, File, UploadFile, Form, Depends
 from app.schemas import CreatePost, PostResponse
-
-app = FastAPI()
-
-
-text_posts = {
-    1: {"title": "New Post", "content": "Cool test post"},
-    2: {"title": "Python Tip", "content": "Use list comprehensions for cleaner loops."},
-    3: {"title": "Daily Motivation", "content": "Consistency beats intensity every time."},
-    4: {"title": "Fun Fact", "content": "The first computer bug was an actual moth found in a Harvard Mark II."},
-    5: {"title": "Update", "content": "Just launched my new project! Excited to share more soon."},
-    6: {"title": "Tech Insight", "content": "Async IO in Python can massively speed up I/O-bound tasks."},
-    7: {"title": "Quote", "content": "\"Programs must be written for people to read, and only incidentally for machines to execute.\""},
-    8: {"title": "Weekend Plans", "content": "Might finally clean up my GitHub repos... or just play some Minecraft."},
-    9: {"title": "Question", "content": "What's the most underrated Python library you've ever used?"},
-    10: {"title": "Mini Announcement", "content": "New video drops tomorrow—covering the weirdest Python features!"}
-}
+from app.db import Post, create_db_and_tables, get_async_session
+from sqlalchemy.ext.asyncio import AsyncSession
+from contextlib import asynccontextmanager
+from sqlalchemy import select
 
 
-@app.get("/posts")
-def get_all_posts(limit: int = None):
-    if limit:
-        return list(text_posts.values())[:limit]
-    return text_posts
+
+# Application startup/shutdown lifecycle manager.
+# Runs setup code before the app starts accepting requests.
+# The code after 'yield' runs during application shutdown.
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await create_db_and_tables()
+    yield
+
+app = FastAPI(lifespan=lifespan)
 
 
-@app.get("/posts/{id}", response_model=PostResponse)
-def get_post(id: int):
-    if id not in text_posts:
-        raise HTTPException(status_code=404, detail="Post not found")
-    return text_posts.get(id)
+# 1. Request with upload file
+# 2. Take the file and create a temp file
+# 3. Access the database and upload the temp file
+# 4. Remove the temp file after all process is complete
+@app.post("/upload")
+async def upload_file(
+        file: UploadFile = File(...),
+        caption: str = Form(...),
+        session: AsyncSession = Depends(get_async_session)
+):
+
+    post = Post(
+        caption=caption,
+        url="dummy url",
+        file_type="photo",
+        file_name="dummy name"
+    )
+
+    session.add(post)
+    await session.commit()
+    await session.refresh(post)
+
+    return post
 
 
-@app.post("/posts", response_model=PostResponse)
-def create_post(post: CreatePost):
-    new_id = max(text_posts.keys()) + 1
+@app.get("/feed")
+async def get_feed(
+        session: AsyncSession = Depends(get_async_session)
+):
+    result = await session.execute(select(Post).order_by(Post.created_at.desc()))
+    all_posts = result.scalars().all()
 
-    text_posts[new_id] = {
-        "title": post.title,
-        "content": post.content
-    }
+    post_data = []
 
-    return text_posts[new_id]
+    for post in all_posts:
+        post = {
+            "id": str(post.id),
+            "caption": post.caption,
+            "url": post.url,
+            "file_type": post.file_type,
+            "file_name": post.file_name,
+            "created_at": post.created_at.isoformat(),
+        }
+
+        post_data.append(post)
+
+    return {"posts": post_data}
 
 
-# @app.delete("/post/{id}")
-# def delete_post(id: int):
-#     if id == text_posts[id]:
+
+
+
+
+
+
+
+
