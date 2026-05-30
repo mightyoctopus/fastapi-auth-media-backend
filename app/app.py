@@ -48,15 +48,8 @@ async def upload_file(
             temp_file_path = tmp_file.name
             print(f"File temporarily stored at: {temp_file_path}")
 
-
-        if not temp_file_path or not os.path.exists(temp_file_path):
-            raise HTTPException(
-                status_code=404,
-                detail="File not found"
-            )
-
         response = imagekit.files.upload(
-            file=Path(temp_file_path),
+            file=temp_file_path,
             file_name=file_name,
             folder="/uploads",
         )
@@ -80,6 +73,11 @@ async def upload_file(
             "file_name": post.file_name,
             "created_at": post.created_at.isoformat()
         }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Upload failed -- {e}"
+        )
     finally:
         # Clean up temp file
         if temp_file_path and os.path.exists(temp_file_path):
