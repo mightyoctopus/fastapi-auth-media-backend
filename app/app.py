@@ -49,7 +49,7 @@ async def upload_file(
             print(f"File temporarily stored at: {temp_file_path}")
 
         response = imagekit.files.upload(
-            file=temp_file_path,
+            file=Path(temp_file_path),
             file_name=file_name,
             folder="/uploads",
         )
