@@ -1,3 +1,4 @@
+import uuid
 from typing import Optional
 from fastapi import FastAPI, HTTPException, File, UploadFile, Form, Depends
 from app.schemas import CreatePost, PostResponse
@@ -111,7 +112,24 @@ async def get_feed(
 
 
 
+@app.delete("/posts/{post_id}")
+async def delete_post(post_id: str, session: AsyncSession = Depends(get_async_session)):
 
+    try:
+        post_uuid = uuid.UUID(post_id)
+
+        result = await session.execute(select(Post).where(Post.id == post_uuid))
+        post = result.scalars().first()
+
+        if not post:
+            raise HTTPException(status_code=404, detail="Post not found")
+
+        await session.delete(post)
+        await session.commit()
+
+        return {"success": True, "message": f"Post {post_id} deleted successfully."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Server error occurred, deleting post {post_id}")
 
 
 
