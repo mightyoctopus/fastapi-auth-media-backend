@@ -57,7 +57,7 @@ async def upload_file(
         post = Post(
             caption=caption,
             url=response.url,
-            file_type="video" if file.content_type.startswith("video") else "photo",
+            file_type="video" if file.content_type.startswith("video/") else "image",
             file_name=file_name
         )
 
