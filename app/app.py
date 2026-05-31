@@ -48,6 +48,8 @@ async def upload_file(
             temp_file_path = tmp_file.name
             print(f"File temporarily stored at: {temp_file_path}")
 
+        ## How to Transform Images Stored in Imagekit by Parameter modifier
+        ## Source: https://imagekit.io/docs/transformations
         response = imagekit.files.upload(
             file=Path(temp_file_path),
             file_name=file_name,
