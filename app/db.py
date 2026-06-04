@@ -9,6 +9,7 @@ from sqlalchemy.orm import DeclarativeBase, relationship
 from datetime import datetime
 from fastapi_users.db import SQLAlchemyUserDatabase, SQLAlchemyBaseUserTableUUID
 
+### ORM Model ###
 
 
 DATABASE_URL = "sqlite+aiosqlite:///./test.db"
