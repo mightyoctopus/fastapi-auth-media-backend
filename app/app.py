@@ -34,7 +34,7 @@ app.include_router(fastapi_users.get_verify_router(UserRead), prefix="/auth", ta
 app.include_router(fastapi_users.get_users_router(UserRead, UserUpdate), prefix="/users", tags=["users"])
 
 
-@app.post("/upload")
+@app.post("/upload", response_model=PostResponse)
 async def upload_file(
         file: UploadFile = File(...),
         caption: str = Form(...),
@@ -77,14 +77,7 @@ async def upload_file(
         await session.commit()
         await session.refresh(post)
 
-        return {
-            "id": str(post.id),
-            "caption": post.caption,
-            "url": post.url,
-            "file_type": post.file_type,
-            "file_name": post.file_name,
-            "created_at": post.created_at.isoformat()
-        }
+        return post
     except Exception as e:
         raise HTTPException(
             status_code=500,
