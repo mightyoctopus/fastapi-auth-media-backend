@@ -13,12 +13,27 @@ class CreatePost(BaseModel):
 class PostResponse(BaseModel):
     id: uuid.UUID
     caption: str
+    img_analysis: str
     url: str
     file_type: str
     file_name: str
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class FeedPostResponse(BaseModel):
+    id: uuid.UUID
+    user_id: uuid.UUID
+    caption: str
+    img_analysis: str
+    url: str
+    file_type: str
+    file_name: str
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
 
 
 class UserRead(schemas.BaseUser[uuid.UUID]):
