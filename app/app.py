@@ -1,13 +1,14 @@
 import uuid
 from typing import Optional
 from fastapi import FastAPI, HTTPException, File, UploadFile, Form, Depends
-from app.schemas import CreatePost, PostResponse, UserCreate, UserUpdate, UserRead
+from app.schemas import CreatePost, PostResponse, FeedPostResponse, UserCreate, UserUpdate, UserRead
 from app.db import Post, create_db_and_tables, get_async_session, User
 from app.images import imagekit
 from app.users import auth_backend, current_active_user, fastapi_users
 from sqlalchemy.ext.asyncio import AsyncSession
 from contextlib import asynccontextmanager
 from sqlalchemy import select
+from app.ai import Gpt
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 import shutil
@@ -57,6 +58,9 @@ async def upload_file(
             temp_file_path = tmp_file.name
             print(f"File temporarily stored at: {temp_file_path}")
 
+        llm = Gpt(model="gpt-5-mini")
+        img_analysis = llm.call_model(temp_file_path)
+
         ## How to Transform Images Stored in Imagekit by Parameter modifier
         ## Source: https://imagekit.io/docs/transformations
         response = imagekit.files.upload(
@@ -68,6 +72,7 @@ async def upload_file(
         post = Post(
             user_id=user.id,
             caption=caption,
+            img_analysis=img_analysis,
             url=response.url,
             file_type="video" if file.content_type.startswith("video/") else "image",
             file_name=file_name
@@ -89,7 +94,7 @@ async def upload_file(
             os.unlink(temp_file_path)
         file.file.close()
 
-@app.get("/feed")
+@app.get("/feed", response_model=list[FeedPostResponse])
 async def get_feed(
         session: AsyncSession = Depends(get_async_session),
         user: User = Depends(current_active_user)
@@ -97,23 +102,7 @@ async def get_feed(
     result = await session.execute(select(Post).order_by(Post.created_at.desc()))
     all_posts = result.scalars().all()
 
-    post_data = []
-
-    for post in all_posts:
-        post = {
-            "id": str(post.id),
-            "user_id": str(post.user_id),
-            "caption": post.caption,
-            "url": post.url,
-            "file_type": post.file_type,
-            "file_name": post.file_name,
-            "created_at": post.created_at.isoformat(),
-            "is_owner": post.user_id == user.id
-        }
-
-        post_data.append(post)
-
-    return {"posts": post_data}
+    return all_posts
 
 
 
