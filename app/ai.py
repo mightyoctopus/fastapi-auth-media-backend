@@ -12,7 +12,7 @@ class LlmClient(ABC):
             return base64.b64encode(image_file.read()).decode("utf-8")
 
     @abstractmethod
-    def call_model(self):
+    def call_model(self, image_path):
         pass
 
 
@@ -28,22 +28,25 @@ class Gpt(LlmClient):
     def call_model(self, image_path):
         base64_str = self.encode_image(image_path)
 
-        response = self.client.responses.create(
-            model = self.model,
-            instructions="You will be an image analyzer that analyzes the image that the user uploaded.",
-            input=[
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "input_text", "text": "What is this image about?"},
-                        {
-                            "type": "input_image",
-                            "image_url": f"data:image/jpeg;base64,{base64_str}"
-                        }
-                    ]
-                }
-            ]
-        )
+        try:
+            response = self.client.responses.create(
+                model = self.model,
+                instructions="You will be an image analyzer that analyzes the image that the user uploaded.",
+                input=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "input_text", "text": "What is this image about?"},
+                            {
+                                "type": "input_image",
+                                "image_url": f"data:image/jpeg;base64,{base64_str}"
+                            }
+                        ]
+                    }
+                ]
+            )
+        except Exception as e:
+            raise RuntimeError(f"Failed to analyze the image with OpenAI - {e}")
 
         return response.output_text
 
