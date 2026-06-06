@@ -30,6 +30,7 @@ class Gpt(LlmClient):
 
         response = self.client.responses.create(
             model = self.model,
+            instructions="You will be an image analyzer that analyzes the image that the user uploaded.",
             input=[
                 {
                     "role": "user",
